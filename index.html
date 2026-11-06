@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret HD 2.0 | WhatsApp Status Optimizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Hide elements by default for state management */
+        .hidden-state { display: none !important; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 4px; }
+
+        /* Canvas preview sizing */
+        #render-canvas {
+            width: 100%;
+            max-width: 280px;
+            aspect-ratio: 9/16;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            background-color: #000;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="w-full p-6 text-center border-b border-gray-800 glass-panel">
+        <h1 class="text-3xl font-extrabold tracking-tight">
+            Secret <span class="gradient-text">HD 2.0</span>
+        </h1>
+        <p class="text-sm text-gray-400 mt-2">Pengoptimum Status WhatsApp Client-Side</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="glass-panel rounded-2xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+            
+            <!-- SECTION 1: UPLOAD -->
+            <div id="section-upload" class="flex flex-col items-center">
+                <div class="w-full border-2 border-dashed border-gray-600 rounded-xl p-10 flex flex-col items-center justify-center hover:border-emerald-500 hover:bg-gray-800/50 transition-all cursor-pointer group" onclick="document.getElementById('file-input').click()">
+                    <svg class="w-16 h-16 text-gray-400 group-hover:text-emerald-400 transition-colors mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-lg font-semibold text-gray-300 group-hover:text-white transition-colors">Klik atau Seret Video ke sini</p>
+                    <p class="text-sm text-gray-500 mt-2">Menyokong MP4, MOV, WebM</p>
+                    <input type="file" id="file-input" accept="video/mp4,video/x-m4v,video/*" class="hidden">
+                </div>
+            </div>
+
+            <!-- SECTION 2: METADATA & PRE-PROCESS -->
+            <div id="section-metadata" class="hidden-state flex flex-col items-center w-full">
+                <div class="flex items-center justify-between w-full mb-6 pb-4 border-b border-gray-700">
+                    <h2 class="text-xl font-bold text-emerald-400">Maklumat Video</h2>
+                    <button onclick="resetApp()" class="text-sm text-red-400 hover:text-red-300 flex items-center gap-1">
+                        Batal
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mb-8">
+                    <div class="bg-gray-800/80 p-4 rounded-lg text-center border border-gray-700">
+                        <p class="text-xs text-gray-400 mb-1">Resolusi Asal</p>
+                        <p class="font-bold text-white" id="meta-resolution">-</p>
+                    </div>
+                    <div class="bg-gray-800/80 p-4 rounded-lg text-center border border-gray-700">
+                        <p class="text-xs text-gray-400 mb-1">Durasi</p>
+                        <p class="font-bold text-white" id="meta-duration">-</p>
+                    </div>
+                    <div class="bg-gray-800/80 p-4 rounded-lg text-center border border-gray-700">
+                        <p class="text-xs text-gray-400 mb-1">Nisbah Aspek</p>
+                        <p class="font-bold text-white" id="meta-aspect">-</p>
+                    </div>
+                    <div class="bg-gray-800/80 p-4 rounded-lg text-center border border-gray-700">
+                        <p class="text-xs text-gray-400 mb-1">Status 9:16</p>
+                        <p class="font-bold text-emerald-400" id="meta-status">-</p>
+                    </div>
+                </div>
+
+                <div class="bg-blue-900/20 border border-blue-800/50 p-4 rounded-lg w-full mb-8">
+                    <p class="text-sm text-blue-200">
+                        <strong class="text-blue-400">Tindakan:</strong> Video akan ditukar ke format 1080x1920 (9:16). Jika bukan 9:16, teknologi <em>Blur Background Padding</em> akan digunakan secara automatik.
+                    </p>
+                </div>
+
+                <button id="btn-process" onclick="startProcessing()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Mula Proses Video (HD)
+                </button>
+            </div>
+
+            <!-- SECTION 3: PROCESSING -->
+            <div id="section-processing" class="hidden-state flex flex-col items-center w-full">
+                <h2 class="text-2xl font-bold text-white mb-2 animate-pulse">Memproses Video...</h2>
+                <p class="text-sm text-gray-400 mb-6">Sila tunggu. Pemprosesan dilakukan 100% pada peranti anda.</p>
+                
+                <!-- Live Canvas Preview -->
+                <canvas id="render-canvas" width="1080" height="1920" class="mb-6"></canvas>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-800 rounded-full h-4 mb-2 overflow-hidden border border-gray-700">
+                    <div id="progress-bar" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-4 rounded-full transition-all duration-200" style="width: 0%"></div>
+                </div>
+                <div class="w-full flex justify-between text-sm text-gray-400 font-medium">
+                    <span id="progress-text">0%</span>
+                    <span>Tengah Render</span>
+                </div>
+            </div>
+
+            <!-- SECTION 4: RESULT -->
+            <div id="section-result" class="hidden-state flex flex-col items-center w-full">
+                <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 border border-emerald-500/50">
+                    <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Video Sedia!</h2>
+                <p class="text-sm text-gray-400 mb-8 text-center">Video anda telah dioptimumkan untuk WhatsApp Status (High Quality 9:16).</p>
+                
+                <a id="download-link" href="#" download="SecretHD_Status.mp4" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] text-center transform transition hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 mb-4">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Muat Turun Video (HD)
+                </a>
+
+                <button onclick="resetApp()" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl border border-gray-600 transition-colors">
+                    Proses Video Lain
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Hidden Video Element for Source Reading -->
+    <video id="source-video" class="hidden" playsinline crossorigin="anonymous"></video>
+
+    <!-- Footer -->
+    <footer class="p-6 text-center text-xs text-gray-600">
+        &copy; 2026 Secret HD 2.0. Memproses sepenuhnya di pelayar web. Privasi terjamin.
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // DOM Elements
+        const fileInput = document.getElementById('file-input');
+        const sourceVideo = document.getElementById('source-video');
+        const renderCanvas = document.getElementById('render-canvas');
+        const ctx = renderCanvas.getContext('2d', { alpha: false });
+        
+        // Sections
+        const secUpload = document.getElementById('section-upload');
+        const secMetadata = document.getElementById('section-metadata');
+        const secProcessing = document.getElementById('section-processing');
+        const secResult = document.getElementById('section-result');
+
+        // UI Updates
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const downloadLink = document.getElementById('download-link');
+
+        // State Variables
+        let videoFile = null;
+        let objectUrl = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let animationFrameId = null;
+        let audioContext = null;
+        let mediaStreamDest = null;
+        let isProcessing = false;
+
+        // Constants for Output
+        const OUTPUT_WIDTH = 1080;
+        const OUTPUT_HEIGHT = 1920;
+
+        // Event Listener: File Input
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Handle Drag & Drop
+        const uploadBox = secUpload.querySelector('.border-dashed');
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('border-emerald-500', 'bg-gray-800/80');
+        });
+        uploadBox.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('border-emerald-500', 'bg-gray-800/80');
+        });
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('border-emerald-500', 'bg-gray-800/80');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('video/')) {
+                alert('Sila muat naik fail video yang sah.');
+                return;
+            }
+            videoFile = file;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            objectUrl = URL.createObjectURL(videoFile);
+            
+            sourceVideo.src = objectUrl;
+            sourceVideo.load();
+            
+            // Wait for metadata to load to show the next screen
+            sourceVideo.onloadedmetadata = () => {
+                showMetadata();
+            };
+        }
+
+        function showMetadata() {
+            // Calculate properties
+            const w = sourceVideo.videoWidth;
+            const h = sourceVideo.videoHeight;
+            const duration = sourceVideo.duration;
+            const aspect = w / h;
+            
+            // Update UI
+            document.getElementById('meta-resolution').innerText = `${w} x ${h}`;
+            document.getElementById('meta-duration').innerText = formatTime(duration);
+            document.getElementById('meta-aspect').innerText = aspect.toFixed(2) + ':1';
+            
+            const statusEl = document.getElementById('meta-status');
+            // 9:16 is 0.5625
+            if (Math.abs(aspect - (9/16)) < 0.05) {
+                statusEl.innerText = 'Sudah Optimum';
+                statusEl.className = 'font-bold text-emerald-400';
+            } else {
+                statusEl.innerText = 'Perlu Diproses';
+                statusEl.className = 'font-bold text-amber-400';
+            }
+
+            // Switch Sections
+            switchSection(secMetadata);
+        }
+
+        function formatTime(seconds) {
+            if(!seconds || isNaN(seconds)) return "00:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        async function startProcessing() {
+            if (isProcessing) return;
+            isProcessing = true;
+            
+            switchSection(secProcessing);
+            
+            // 1. Prepare Audio Web Audio API (Must be done on user interaction)
+            try {
+                // Check if audioContext already exists to avoid memory leaks
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // If it's suspended (browsers do this), resume it
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                // Create source and destination nodes
+                const audioSource = audioContext.createMediaElementSource(sourceVideo);
+                mediaStreamDest = audioContext.createMediaStreamDestination();
+                
+                // Connect source to destination (but NOT to audioContext.destination so it remains silent to user)
+                audioSource.connect(mediaStreamDest);
+            } catch (err) {
+                console.warn("Gagal mengekstrak audio, mungkin format tidak disokong:", err);
+            }
+
+            // 2. Setup Canvas Stream
+            const canvasStream = renderCanvas.captureStream(30); // 30 FPS
+
+            // 3. Combine Audio and Video Streams
+            let combinedStream = new MediaStream();
+            canvasStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
+            
+            if (mediaStreamDest && mediaStreamDest.stream) {
+                mediaStreamDest.stream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+            } else if (sourceVideo.captureStream) {
+                // Fallback for getting audio track directly
+                const vStream = sourceVideo.captureStream();
+                vStream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+            }
+
+            // 4. Setup Media Recorder
+            let mimeType = 'video/webm; codecs=vp9,opus';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = 'video/webm; codecs=vp8,opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm'; // Fallback
+                    // Modern iOS Safari supports mp4 in MediaRecorder
+                    if (MediaRecorder.isTypeSupported('video/mp4')) {
+                        mimeType = 'video/mp4';
+                    }
+                }
+            }
+
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(combinedStream, {
+                mimeType: mimeType,
+                videoBitsPerSecond: 5000000 // 5 Mbps for HD quality
+            });
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                    recordedChunks.push(e.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                finalizeVideo(mimeType);
+            };
+
+            // 5. Start Playback and Recording
+            sourceVideo.currentTime = 0;
+            sourceVideo.volume = 1.0; // Audio is routed to Stream, not speaker
+            
+            try {
+                await sourceVideo.play();
+                mediaRecorder.start();
+                processFrame();
+            } catch (err) {
+                alert("Ralat memulakan video: " + err.message);
+                resetApp();
+            }
+        }
+
+        function processFrame() {
+            if (sourceVideo.paused || sourceVideo.ended) {
+                if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+                return;
+            }
+
+            const vw = sourceVideo.videoWidth;
+            const vh = sourceVideo.videoHeight;
+            
+            // DRAWING LOGIC: Blur Background Padding
+            ctx.clearRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+
+            // Calculate scale to fill (for background)
+            const scaleFill = Math.max(OUTPUT_WIDTH / vw, OUTPUT_HEIGHT / vh);
+            const wFill = vw * scaleFill;
+            const hFill = vh * scaleFill;
+            const xFill = (OUTPUT_WIDTH - wFill) / 2;
+            const yFill = (OUTPUT_HEIGHT - hFill) / 2;
+
+            // Draw blurred background
+            ctx.filter = 'blur(45px) brightness(0.7)';
+            ctx.drawImage(sourceVideo, xFill, yFill, wFill, hFill);
+
+            // Calculate scale to fit (for foreground)
+            const scaleFit = Math.min(OUTPUT_WIDTH / vw, OUTPUT_HEIGHT / vh);
+            const wFit = vw * scaleFit;
+            const hFit = vh * scaleFit;
+            const xFit = (OUTPUT_WIDTH - wFit) / 2;
+            const yFit = (OUTPUT_HEIGHT - hFit) / 2;
+
+            // Draw sharp foreground video
+            ctx.filter = 'none';
+            // Optional: Draw shadow for foreground
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 20;
+            ctx.drawImage(sourceVideo, xFit, yFit, wFit, hFit);
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            // Update Progress
+            const progress = (sourceVideo.currentTime / sourceVideo.duration) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressText.innerText = `${Math.round(progress)}%`;
+
+            // Loop
+            animationFrameId = requestAnimationFrame(processFrame);
+        }
+
+        function finalizeVideo(mimeType) {
+            isProcessing = false;
+            cancelAnimationFrame(animationFrameId);
+            
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            
+            // Generate filename based on extension
+            let ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+            const filename = `SecretHD_Status_${Date.now()}.${ext}`;
+
+            const url = URL.createObjectURL(blob);
+            
+            downloadLink.href = url;
+            downloadLink.download = filename;
+
+            // Ensure progress shows 100%
+            progressBar.style.width = `100%`;
+            progressText.innerText = `100%`;
+
+            setTimeout(() => {
+                switchSection(secResult);
+            }, 500);
+        }
+
+        function resetApp() {
+            isProcessing = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            if (sourceVideo) sourceVideo.pause();
+            
+            fileInput.value = '';
+            progressBar.style.width = '0%';
+            progressText.innerText = '0%';
+            
+            switchSection(secUpload);
+        }
+
+        function switchSection(activeSection) {
+            const sections = [secUpload, secMetadata, secProcessing, secResult];
+            sections.forEach(sec => {
+                if (sec === activeSection) {
+                    sec.classList.remove('hidden-state');
+                } else {
+                    sec.classList.add('hidden-state');
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
